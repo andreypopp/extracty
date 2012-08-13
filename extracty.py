@@ -1,7 +1,10 @@
 """
 
-    extracty -- metadata extraction for HTML documents
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    extracty -- metadata extraction from HTML documents
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This library provides a set of tools to extract various metadata from HTML
+    documents, such as title, timestamps, authorship and so on.
 
 """
 
