@@ -9,9 +9,18 @@
 """
 
 import re
-import lxml
+import lxml.html
 
 __all__ = ('extract_author',)
+
+def html_to_text(doc):
+    """ HTML to text converter"""
+    if isinstance(doc, basestring):
+        doc = lxml.html.fromstring(doc)
+
+    txt = doc.xpath('.//text()')
+    txt = ' '.join(txt)
+    return re.sub('\s+', ' ', txt).strip()
 
 def extract_author(doc):
     """ Extract author from ``doc``
