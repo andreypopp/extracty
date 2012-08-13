@@ -5,6 +5,9 @@
 
 """
 
+import re
+import lxml
+
 __all__ = ('extract_author',)
 
 def extract_author(doc):
@@ -110,3 +113,39 @@ def extract_author(doc):
                 return _clean(text, parts)
             else:
                 return _clean(maybe_author, None)
+
+def gen_matches_any(*p):
+    """ Generate regexp for matching against any of the parts ``p``"""
+    return re.compile('|'.join('(%s)' % v for v in p), re.I)
+
+def matches_attr(p, e, *attrs):
+    """ Check if element ``e`` has any of the ``attrs`` matches ``p``"""
+    for attr in attrs:
+        if attr in e.attrib and p.search(e.attrib[attr]):
+            return True
+    return False
+
+_author_classes = gen_matches_any(
+    'contributor',
+    'author',
+    'writer',
+    'byline',
+    'by$',
+    'signoff'
+    )
+
+_author_classes_banned = gen_matches_any(
+    'date',
+    'photo',
+    'title',
+    'tag',
+    )
+
+_comment_classes = gen_matches_any(
+    'comment', 'discus', 'disqus', 'pingback')
+
+_author_content = re.compile(
+    r'^[^a-z]*(posted)|(written)|(publsihed)|(created)\s?by\s?.+', re.I | re.VERBOSE)
+
+_author_content_2 = re.compile(
+    r'^[^a-z]*by\s?.+', re.I | re.VERBOSE)
