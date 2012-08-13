@@ -6,7 +6,7 @@ version = '0.1'
 setup(
     name='extracty',
     version=version,
-    description='various utilities to extract metadata from HTML documents',
+    description='various utilities to extract metadata for HTML documents',
     author='Andrey Popp',
     author_email='8mayday@gmail.com',
     license='BSD',

@@ -1,7 +1,7 @@
 """
 
-    extracty -- metadata extraction from HTML documents
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    extracty -- metadata extraction for HTML documents
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 """
 
@@ -21,19 +21,23 @@ def extract_author(doc):
         doc = lxml.html.fromstring(doc)
 
     def _find_meta(doc):
+        """ Inspect <meta> tags"""
         for name in ('author', 'blogger', 'creator', 'publisher'):
-            meta = doc.xpath('//meta[@name="%s"]' % name)
-            if not meta:
-                continue
-            meta = meta[0]
-            text = meta.attrib.get('content')
-            if not text:
-                continue
-            if re.search(r'\.[a-z]{2,4}$', text, re.I):
-                continue
-            return text
+            metas = doc.xpath('//meta[@name="%s"]' % name)
+            for meta in metas:
+                text = meta.attrib.get('content')
+
+                if not text:
+                    continue
+
+                # some publishers like to include domain name here
+                if re.search(r'\.[a-z]{2,4}$', text, re.I):
+                    continue
+
+                return text
 
     def _find_itemprop(doc):
+        """ Inspect HTML5 itemprop microdata"""
         es = doc.xpath('//*[@itemprop="author"]')
         for e in es:
             text = html_to_text(e)
@@ -41,6 +45,7 @@ def extract_author(doc):
                 return text
 
     def _find_rel(doc):
+        """ Inspect rel attributes"""
         es = doc.xpath('//*[@rel="author"]')
         for e in es:
             text = html_to_text(e)
@@ -48,7 +53,12 @@ def extract_author(doc):
                 return text
 
     def _find_heueristics(doc):
+        """ Use heueristics to find author in HTML
 
+        Use either id and class names or content itself
+        """
+
+        # holds (text, textparts) pairs
         seen = []
 
         for e in doc.iter():
@@ -56,15 +66,18 @@ def extract_author(doc):
             text = html_to_text(e)
             found = False
 
+            # if we encounter comments - skip entire tree after that
             if matches_attr(_comment_classes, e, 'class', 'id'):
-                continue
+                break
 
             if len(text) > 80:
                 continue
 
+            # try to match by content
             if _author_content.search(text) or _author_content_2.search(text):
                 found = True
 
+            # try to match by class and id names
             if (
                 matches_attr(_author_classes, e, 'class', 'id')
                 and not matches_attr(_author_classes_banned, e, 'class', 'id')):
@@ -73,6 +86,7 @@ def extract_author(doc):
                 found = True
 
             if found:
+                # check if this element specialize its parent
                 for (el, _) in seen[:]:
                     if text in el:
                         seen.remove((el, _))
