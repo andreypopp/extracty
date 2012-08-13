@@ -18,4 +18,6 @@ setup(
     ],
     entry_points="""
     # -*- Entry points: -*-
+    [console_scripts]
+    extracty-author = extracty:extract_author_command
     """)

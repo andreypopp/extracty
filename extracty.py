@@ -175,3 +175,19 @@ _author_content = re.compile(
 
 _author_content_2 = re.compile(
     r'^[^a-z]*by\s?.+', re.I | re.VERBOSE)
+
+def extract_author_command():
+    import sys
+    import urllib2
+    args = sys.argv[1:]
+    if not args:
+        print >> sys.stderr, 'error: provide URL as an argument'
+        exit(1)
+    request = urllib2.Request(args[0])
+    data = urllib2.urlopen(request).read()
+    author = extract_author(data)
+    if author:
+        print author.encode('utf8')
+    else:
+        print >> sys.stderr, 'error: nothing can be extracted'
+        exit(1)
