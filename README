@@ -1,1 +1,4 @@
-a set of tools to extract metadata from HTML documents
+a set of tools to extract metadata from HTML documents, currently only the
+following features are supported:
+
+  - authorship
