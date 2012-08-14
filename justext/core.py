@@ -166,15 +166,19 @@ def remove_comments(root):
         parent = node.getparent()
         del parent[parent.index(node)]
 
-def preprocess(html_text, encoding=None, default_encoding=DEFAULT_ENCODING,
+def parse_html(html_text, encoding=None, default_encoding=DEFAULT_ENCODING,
         enc_errors=DEFAULT_ENC_ERRORS):
-    "Converts HTML to DOM and removes unwanted parts."
+    """ Parse HTML text"""
     uhtml_text = decode_html(html_text, encoding, default_encoding, enc_errors)
     try:
         root = lxml.html.fromstring(uhtml_text)
     except ValueError: # Unicode strings with encoding declaration are not supported.
         # for XHTML files with encoding declaration, use the declared encoding
         root = lxml.html.fromstring(html_text)
+    return root
+
+def preprocess(root):
+    """Converts HTML to DOM and removes unwanted parts."""
     # add <kw> tags, protect text nodes
     add_kw_tags(root)
     # remove comments
@@ -402,7 +406,7 @@ def revise_paragraph_classification(paragraphs, max_heading_distance=MAX_HEADING
             distance += len(paragraphs[j]['text'])
             j += 1
 
-def justext(html_text, stoplist, length_low=LENGTH_LOW_DEFAULT,
+def justext(html, stoplist, length_low=LENGTH_LOW_DEFAULT,
         length_high=LENGTH_HIGH_DEFAULT, stopwords_low=STOPWORDS_LOW_DEFAULT,
         stopwords_high=STOPWORDS_HIGH_DEFAULT, max_link_density=MAX_LINK_DENSITY_DEFAULT,
         max_heading_distance=MAX_HEADING_DISTANCE_DEFAULT, no_headings=NO_HEADINGS_DEFAULT,
@@ -443,8 +447,11 @@ def justext(html_text, stoplist, length_low=LENGTH_LOW_DEFAULT,
     dom_path:
       A dom path to the paragraph in the originial HTML page.
     """
-    root = preprocess(html_text, encoding=encoding,
-        default_encoding=default_encoding, enc_errors=enc_errors)
+    if isinstance(html, basestring):
+        html = parse_html(html, encoding=encoding,
+            default_encoding=default_encoding,
+            enc_errors=enc_errors)
+    root = preprocess(html)
     paragraphs = make_paragraphs(root)
     classify_paragraphs(paragraphs, stoplist, length_low, length_high,
         stopwords_low, stopwords_high, max_link_density, no_headings)
