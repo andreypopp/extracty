@@ -45,12 +45,9 @@ def extract_cover_image(doc, paragraphs=None):
                 if not meta.attrib.get('content'):
                     continue
                 content = meta.attrib['content']
-                if _image_opengraph_bad.search(content):
+                if _image_opengraph_banned.search(content):
                     continue
                 return content
-
-            # return just first one if previously we have filtered them all
-            return metas[0].attrib.get('content')
 
     def _find_twitter_meta_image(doc):
         metas = doc.xpath('//meta[@name="twitter:image"]')
@@ -281,10 +278,10 @@ _author_content_2 = re.compile(
     r'^[^a-z]*by\s?.+', re.I | re.VERBOSE)
 
 _image_urls_banned = gen_matches_any(
-    'avatar', '\.gif', '\.ico')
+    'avatar', '\.gif', '\.ico', 'logo', 'ads')
 
-_image_opengraph_bad = gen_matches_any(
-    'opengraph', 'og', 'user')
+_image_opengraph_banned = gen_matches_any(
+    'opengraph', 'og', 'user', 'logo')
 
 def main():
     import sys
@@ -294,7 +291,13 @@ def main():
         print >> sys.stderr, 'error: provide URL or FILENAME as an argument'
         exit(1)
     if args[0].lower().startswith('http'):
-        request = urllib2.Request(args[0])
+        request = urllib2.Request(args[0], headers={
+            'User-Agent': (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8)'
+                ' AppleWebKit/536.25 (KHTML, like Gecko)'
+                ' Version/6.0 Safari/536.25')
+
+        })
         data = urllib2.urlopen(request).read()
     else:
         data = open(args[0]).read()
