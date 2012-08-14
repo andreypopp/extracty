@@ -10,8 +10,12 @@
 
 import re
 import urlparse
+import urllib2
 import justext
 import lxml.html
+import itertools
+import Image
+from cStringIO import StringIO
 
 __all__ = (
     'extract', 'extract_author', 'extract_cover_image',
@@ -25,8 +29,8 @@ def extract(doc, url=None, html=False, author=True, cover_image=True):
     if author:
         metadata['author'] = extract_author(doc)
     if cover_image:
-        extracted = extract_cover_image(doc)
-        if url:
+        extracted = extract_cover_image(doc, url)
+        if extracted:
             extracted = urlparse.urljoin(url, extracted)
         metadata['cover_image'] = extracted
 
@@ -35,16 +39,19 @@ def extract(doc, url=None, html=False, author=True, cover_image=True):
         metadata['html'] = extract_html(doc)
     return metadata
 
-def extract_cover_image(doc, paragraphs=None):
+def extract_cover_image(doc, url, paragraphs=None, min_image_size=None):
     """ Extract cover image from doc
 
     :param doc:
         HTML document as a string or as a parsed
+    :param min_image_size:
+        minimum allowed image size
     """
     if isinstance(doc, basestring):
         doc = lxml.html.fromstring(doc)
 
     def _find_og_meta_image(doc):
+        return
         metas = doc.xpath('//meta[@property="og:image"]')
         if metas:
             # some open graph submitted images can be too generic, try to filter
@@ -55,12 +62,14 @@ def extract_cover_image(doc, paragraphs=None):
                 content = meta.attrib['content']
                 if _image_opengraph_banned.search(content):
                     continue
-                return content
+                yield content
 
     def _find_twitter_meta_image(doc):
+        return
         metas = doc.xpath('//meta[@name="twitter:image"]')
-        if metas and metas[0].attrib.get('content'):
-            return metas[0].attrib['content']
+        for meta in metas:
+            if meta.attrib.get('content'):
+                yield meta.attrib['content']
 
     def _find_heueristics(doc):
         ps = paragraphs or justext.justext(
@@ -84,13 +93,31 @@ def extract_cover_image(doc, paragraphs=None):
             for image in images:
                 if _image_urls_banned.search(image):
                     continue
-                return image
+                yield image
 
-    for finder in (_find_og_meta_image, _find_twitter_meta_image,
-            _find_heueristics):
-        img = finder(doc)
-        if img:
-            return img.strip()
+    funcs = (_find_og_meta_image, _find_twitter_meta_image, _find_heueristics)
+    for image in itertools.chain(*(f(doc) for f in funcs)):
+        image = urlparse.urljoin(url, image)
+        if image:
+            if min_image_size:
+                if isinstance(min_image_size, tuple):
+                    (mw, mh) = min_image_size
+                else:
+                    (mw, mh) = (min_image_size, min_image_size)
+                (w, h) = image_size(image)
+                if mw is not None and w < mw:
+                    continue
+                if mh is not None and h < mh:
+                    continue
+            return image.strip()
+
+def image_size(url):
+    data = urllib2.urlopen(url)
+    infp = StringIO()
+    infp.write(data.read())
+    infp.seek(0)
+    img = Image.open(infp)
+    return img.size
 
 def extract_author(doc):
     """ Extract author from ``doc``
