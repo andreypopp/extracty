@@ -193,6 +193,21 @@ def preprocess(root):
         del parent[parent.index(node)]
     return root
 
+class XPathPart(object):
+
+    def __init__(self, name, idx):
+        self.name = name
+        self.idx = idx
+        self.children = {}
+
+    def next(self, name):
+        if name in self.children:
+            idx = self.children[name] + 1
+        else:
+            idx = 1
+        self.children[name] = idx
+        return XPathPart(name, idx)
+
 class SaxPragraphMaker(ContentHandler):
     """
     A class for converting a HTML page represented as a DOM object into a list
@@ -201,6 +216,7 @@ class SaxPragraphMaker(ContentHandler):
 
     def __init__(self):
         self.dom = []
+        self.xpath = []
         self.paragraphs = []
         self.paragraph = {}
         self.link = False
@@ -213,6 +229,8 @@ class SaxPragraphMaker(ContentHandler):
             self.paragraphs.append(self.paragraph)
         self.paragraph = {
             'dom_path': '.'.join(self.dom),
+            'xpath': '/' + '/'.join(
+                '%s[%d]' % (x.name, x.idx) for x in self.xpath),
             'text_nodes': [],
             'word_count': 0,
             'linked_char_count': 0,
@@ -222,6 +240,10 @@ class SaxPragraphMaker(ContentHandler):
     def startElementNS(self, name, qname, attrs):
         dummy_uri, name = name
         self.dom.append(name)
+        if self.xpath:
+            self.xpath.append(self.xpath[-1].next(name))
+        else:
+            self.xpath.append(XPathPart(name, 1))
         if name in PARAGRAPH_TAGS or (name == 'br' and self.br):
             if name == 'br':
                 # the <br><br> is a paragraph separator and should
@@ -241,6 +263,7 @@ class SaxPragraphMaker(ContentHandler):
     def endElementNS(self, name, qname):
         dummy_uri, name = name
         self.dom.pop()
+        self.xpath.pop()
         if name in PARAGRAPH_TAGS:
             self._start_new_pragraph()
         if name == 'a':
@@ -446,6 +469,9 @@ def justext(html, stoplist, length_low=LENGTH_LOW_DEFAULT,
 
     dom_path:
       A dom path to the paragraph in the originial HTML page.
+
+    xpath:
+      A XPath expression which points to the paragraph.
     """
     if isinstance(html, basestring):
         html = parse_html(html, encoding=encoding,
