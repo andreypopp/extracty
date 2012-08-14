@@ -67,3 +67,24 @@ class PrecedingsTests(unittest.TestCase):
         self.assertIterateOver(d, '/doc/c', [], before=before)
         self.assertIterateOver(d, '/doc/c/c1', ['c'], before=before)
         self.assertIterateOver(d, '/doc/d', ['c1', 'c'], before=before)
+
+    def test_skip(self):
+        d = doc('''
+        <doc>
+            <a/>
+            <b>
+                <b1/>
+            </b>
+            <c>
+                <c1/>
+            </c>
+            <d/>
+        </doc>
+        ''')
+        skip = lambda x: x == d.xpath('/doc/b')[0]
+        self.assertIterateOver(d, '/doc/a', ['doc'], skip=skip)
+        self.assertIterateOver(d, '/doc/b', ['a', 'doc'], skip=skip)
+        self.assertIterateOver(d, '/doc/b/b1', [], skip=skip)
+        self.assertIterateOver(d, '/doc/c', ['a', 'doc'], skip=skip)
+        self.assertIterateOver(d, '/doc/c/c1', ['c', 'a', 'doc'], skip=skip)
+        self.assertIterateOver(d, '/doc/d', ['c1', 'c', 'a', 'doc'], skip=skip)
