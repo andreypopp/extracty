@@ -270,7 +270,7 @@ _author_content_2 = re.compile(
     r'^[^a-z]*by\s?.+', re.I | re.VERBOSE)
 
 _image_urls_banned = gen_matches_any(
-    'avatar')
+    'avatar', '\.gif', '\.ico')
 
 def main():
     import sys
