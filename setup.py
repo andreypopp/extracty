@@ -22,4 +22,5 @@ setup(
     # -*- Entry points: -*-
     [console_scripts]
     extracty-author = extracty:extract_author_command
+    justext = justext:main
     """)
