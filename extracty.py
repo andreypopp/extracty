@@ -9,27 +9,72 @@
 """
 
 import re
+import justext
 import lxml.html
 
-__all__ = ('extract_author', 'html_to_text')
+__all__ = (
+    'extract', 'extract_author', 'extract_cover_image',
+    'html_to_text')
 
-def html_to_text(doc):
-    """ HTML to text converter"""
-    if isinstance(doc, basestring):
-        doc = lxml.html.fromstring(doc)
-
-    txt = doc.xpath('.//text()')
-    txt = ' '.join(txt)
-    return re.sub('\s+', ' ', txt).strip()
-
-def extract(doc, author=True):
+def extract(doc, author=True, cover_image=True):
     """ Extract metadata from HTML document"""
     if isinstance(doc, basestring):
         doc = lxml.html.fromstring(doc)
     metadata = {}
     if author:
         metadata['author'] = extract_author(doc)
+    if cover_image:
+        metadata['cover_image'] = extract_cover_image(doc)
     return metadata
+
+def extract_cover_image(doc, paragraphs=None):
+    """ Extract cover image from doc
+
+    :param doc:
+        HTML document as a string or as a parsed
+    """
+    if isinstance(doc, basestring):
+        doc = lxml.html.fromstring(doc)
+
+    def _find_og_meta_image(doc):
+        metas = doc.xpath('//meta[@property="og:image"]')
+        if metas and metas[0].attrib.get('content'):
+            return metas[0].attrib['content']
+
+    def _find_twitter_meta_image(doc):
+        metas = doc.xpath('//meta[@name="twitter:image"]')
+        if metas and metas[0].attrib.get('content'):
+            return metas[0].attrib['content']
+
+    def _find_heueristics(doc):
+        ps = paragraphs or justext.justext(
+            doc, justext.get_stoplist('English'))
+        prev = None
+        images = []
+        tree = lxml.etree.ElementTree(doc)
+        for p in ps:
+            if p['class'] == 'good':
+                xpath = p['xpath']
+                e = doc.xpath(xpath)
+                if not e:
+                    continue
+                e = e[0]
+                for prec in precedings(e, lambda x: prev is not None and prev is e):
+                    if prec.tag == 'img' and prec.attrib.get('src'):
+                        images.append(prec.attrib['src'])
+                prev = e
+
+        if images:
+            for image in images:
+                if _image_urls_banned.search(image):
+                    continue
+                return image
+
+    for finder in (_find_og_meta_image, _find_twitter_meta_image,
+            _find_heueristics):
+        img = finder(doc)
+        if img:
+            return img.strip()
 
 def extract_author(doc):
     """ Extract author from ``doc``
@@ -160,6 +205,45 @@ def matches_attr(p, e, *attrs):
             return True
     return False
 
+def html_to_text(doc):
+    """ HTML to text converter"""
+    if isinstance(doc, basestring):
+        doc = lxml.html.fromstring(doc)
+
+    txt = doc.xpath('.//text()')
+    txt = ' '.join(txt)
+    return re.sub('\s+', ' ', txt).strip()
+
+def precedings(element, before=None):
+    """ Traverse preceding elements in tree"""
+
+    if before and before(element):
+        yield None
+        raise StopIteration()
+
+    def _rev_children(element):
+        for e in element.iterchildren(reversed=True):
+            for se in _rev_children(e):
+                yield se
+            yield e
+
+    for sib in element.itersiblings(preceding=True):
+        if before and before(sib):
+            yield None
+            raise StopIteration()
+        for ch in _rev_children(sib):
+            if before and before(ch):
+                yield None
+                raise StopIteration()
+            yield ch
+
+    if element.getparent() is not None:
+        for el in precedings(element.getparent()):
+            if el is None or before and before(el):
+                yield None
+                raise StopIteration()
+            yield el
+
 _author_classes = gen_matches_any(
     'contributor',
     'author',
@@ -184,6 +268,9 @@ _author_content = re.compile(
 
 _author_content_2 = re.compile(
     r'^[^a-z]*by\s?.+', re.I | re.VERBOSE)
+
+_image_urls_banned = gen_matches_any(
+    'avatar')
 
 def main():
     import sys
