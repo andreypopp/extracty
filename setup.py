@@ -11,11 +11,13 @@ setup(
     author_email='8mayday@gmail.com',
     license='BSD',
     py_modules=['extracty'],
+    packages=['justext'],
     include_package_data=True,
     zip_safe=False,
     install_requires=[
         'lxml',
     ],
+    package_data={'justext': ['stoplists/*.txt']},
     entry_points="""
     # -*- Entry points: -*-
     [console_scripts]
