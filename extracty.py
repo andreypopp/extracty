@@ -241,32 +241,27 @@ def html_to_text(doc):
 def precedings(element, before=None):
     """ Traverse preceding elements in tree"""
 
-    if before and before(element):
-        yield None
-        raise StopIteration()
-
     def _rev_children(element):
         for e in element.iterchildren(reversed=True):
             for se in _rev_children(e):
                 yield se
             yield e
 
-    for sib in element.itersiblings(preceding=True):
-        if before and before(sib):
-            yield None
-            raise StopIteration()
-        for ch in _rev_children(sib):
-            if before and before(ch):
-                yield None
-                raise StopIteration()
-            yield ch
+    def _precedings(element):
+        for sib in element.itersiblings(preceding=True):
+            for ch in _rev_children(sib):
+                yield ch
+            yield sib
 
-    if element.getparent() is not None:
-        for el in precedings(element.getparent()):
-            if el is None or before and before(el):
-                yield None
-                raise StopIteration()
-            yield el
+        if element.getparent() is not None:
+            yield element.getparent()
+            for el in _precedings(element.getparent()):
+                yield el
+
+    for x in _precedings(element):
+        if before and before(x):
+            break
+        yield x
 
 _author_classes = gen_matches_any(
     'contributor',

@@ -18,6 +18,7 @@ setup(
         'lxml',
     ],
     package_data={'justext': ['stoplists/*.txt']},
+    test_suite='tests',
     entry_points="""
     # -*- Entry points: -*-
     [console_scripts]
