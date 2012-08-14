@@ -16,6 +16,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'lxml',
+        'docopt',
     ],
     package_data={'justext': ['stoplists/*.txt']},
     test_suite='tests',

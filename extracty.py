@@ -9,6 +9,7 @@
 """
 
 import re
+import urlparse
 import justext
 import lxml.html
 
@@ -16,7 +17,7 @@ __all__ = (
     'extract', 'extract_author', 'extract_cover_image',
     'html_to_text')
 
-def extract(doc, html=False, author=True, cover_image=True):
+def extract(doc, url=None, html=False, author=True, cover_image=True):
     """ Extract metadata from HTML document"""
     if isinstance(doc, basestring):
         doc = lxml.html.fromstring(doc)
@@ -24,7 +25,10 @@ def extract(doc, html=False, author=True, cover_image=True):
     if author:
         metadata['author'] = extract_author(doc)
     if cover_image:
-        metadata['cover_image'] = extract_cover_image(doc)
+        extracted = extract_cover_image(doc)
+        if url:
+            extracted = urlparse.urljoin(url, extracted)
+        metadata['cover_image'] = extracted
 
     # this should go last, because it mutates tree
     if html:
@@ -313,14 +317,21 @@ _image_opengraph_banned = gen_matches_any(
     'opengraph', 'og', 'user', 'logo')
 
 def main():
-    import sys
+    """usage: extracty [options] SRC
+
+    argument:
+        SRC     url or filename
+
+    options:
+        -h, --help          show this message and exit
+        -u, --url URL       url to use in case of filename provided
+    """
+    import docopt
     import urllib2
-    args = sys.argv[1:]
-    if not args:
-        print >> sys.stderr, 'error: provide URL or FILENAME as an argument'
-        exit(1)
-    if args[0].lower().startswith('http'):
-        request = urllib2.Request(args[0], headers={
+    args = docopt.docopt(main.__doc__)
+
+    if args['SRC'].lower().startswith('http'):
+        request = urllib2.Request(args['SRC'], headers={
             'User-Agent': (
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8)'
                 ' AppleWebKit/536.25 (KHTML, like Gecko)'
@@ -328,9 +339,11 @@ def main():
 
         })
         data = urllib2.urlopen(request).read()
+        url = args['SRC']
     else:
-        data = open(args[0]).read()
-    metadata = extract(data)
+        data = open(args['SRC']).read()
+        url = args['--url'] or ''
+    metadata = extract(data, url=url)
     for k, v in metadata.items():
         v = v or ''
         print '%s\t%s' % (k, v.encode('utf8'))
