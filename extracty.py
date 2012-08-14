@@ -16,7 +16,7 @@ __all__ = (
     'extract', 'extract_author', 'extract_cover_image',
     'html_to_text')
 
-def extract(doc, author=True, cover_image=True):
+def extract(doc, html=False, author=True, cover_image=True):
     """ Extract metadata from HTML document"""
     if isinstance(doc, basestring):
         doc = lxml.html.fromstring(doc)
@@ -25,6 +25,10 @@ def extract(doc, author=True, cover_image=True):
         metadata['author'] = extract_author(doc)
     if cover_image:
         metadata['cover_image'] = extract_cover_image(doc)
+
+    # this should go last, because it mutates tree
+    if html:
+        metadata['html'] = extract_html(doc)
     return metadata
 
 def extract_cover_image(doc, paragraphs=None):
@@ -201,6 +205,18 @@ def extract_author(doc):
                 return _clean(text, parts)
             else:
                 return _clean(maybe_author, None)
+
+def extract_html(doc, paragraphs=None):
+    if isinstance(doc, basestring):
+        doc = lxml.html.fromstring(doc)
+
+    ps = paragraphs or justext.justext(
+        doc, justext.get_stoplist('English'))
+    for p in ps:
+        if p['class'] != 'bad':
+            for el in doc.xpath(p['xpath']):
+                el.drop_tree()
+    return lxml.html.tostring(doc)
 
 def gen_matches_any(*p):
     """ Generate regexp for matching against any of the parts ``p``"""
