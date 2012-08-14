@@ -22,6 +22,15 @@ def html_to_text(doc):
     txt = ' '.join(txt)
     return re.sub('\s+', ' ', txt).strip()
 
+def extract(doc, author=True):
+    """ Extract metadata from HTML document"""
+    if isinstance(doc, basestring):
+        doc = lxml.html.fromstring(doc)
+    metadata = {}
+    if author:
+        metadata['author'] = extract_author(doc)
+    return metadata
+
 def extract_author(doc):
     """ Extract author from ``doc``
 
@@ -176,18 +185,19 @@ _author_content = re.compile(
 _author_content_2 = re.compile(
     r'^[^a-z]*by\s?.+', re.I | re.VERBOSE)
 
-def extract_author_command():
+def main():
     import sys
     import urllib2
     args = sys.argv[1:]
     if not args:
-        print >> sys.stderr, 'error: provide URL as an argument'
+        print >> sys.stderr, 'error: provide URL or FILENAME as an argument'
         exit(1)
-    request = urllib2.Request(args[0])
-    data = urllib2.urlopen(request).read()
-    author = extract_author(data)
-    if author:
-        print author.encode('utf8')
+    if args[0].lower().startswith('http'):
+        request = urllib2.Request(args[0])
+        data = urllib2.urlopen(request).read()
     else:
-        print >> sys.stderr, 'error: nothing can be extracted'
-        exit(1)
+        data = open(args[0]).read()
+    metadata = extract(data)
+    for k, v in metadata.items():
+        v = v or ''
+        print '%s\t%s' % (k, v.encode('utf8'))
