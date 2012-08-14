@@ -11,7 +11,7 @@
 import re
 import lxml.html
 
-__all__ = ('extract_author',)
+__all__ = ('extract_author', 'html_to_text')
 
 def html_to_text(doc):
     """ HTML to text converter"""
