@@ -38,8 +38,19 @@ def extract_cover_image(doc, paragraphs=None):
 
     def _find_og_meta_image(doc):
         metas = doc.xpath('//meta[@property="og:image"]')
-        if metas and metas[0].attrib.get('content'):
-            return metas[0].attrib['content']
+        if metas:
+            # some open graph submitted images can be too generic, try to filter
+            # them
+            for meta in metas:
+                if not meta.attrib.get('content'):
+                    continue
+                content = meta.attrib['content']
+                if _image_opengraph_bad.search(content):
+                    continue
+                return content
+
+            # return just first one if previously we have filtered them all
+            return metas[0].attrib.get('content')
 
     def _find_twitter_meta_image(doc):
         metas = doc.xpath('//meta[@name="twitter:image"]')
@@ -271,6 +282,9 @@ _author_content_2 = re.compile(
 
 _image_urls_banned = gen_matches_any(
     'avatar', '\.gif', '\.ico')
+
+_image_opengraph_bad = gen_matches_any(
+    'opengraph', 'og', 'user')
 
 def main():
     import sys
