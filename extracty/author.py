@@ -23,8 +23,6 @@ def extract_author(doc):
 
     def _find_meta(doc):
         """ Inspect <meta> tags"""
-        import ipdb
-        ipdb.set_trace()
         for name in ('author', 'blogger', 'creator', 'publisher'):
             metas = doc.xpath('//meta[@name="%s"]' % name)
             for meta in metas:
