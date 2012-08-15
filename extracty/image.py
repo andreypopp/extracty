@@ -30,7 +30,6 @@ def extract_cover_image(doc, url, paragraphs=None, min_image_size=None):
         doc = lxml.html.fromstring(doc)
 
     def _find_og_meta_image(doc):
-        return
         metas = doc.xpath('//meta[@property="og:image"]')
         if metas:
             # some open graph submitted images can be too generic, try to filter
@@ -44,7 +43,6 @@ def extract_cover_image(doc, url, paragraphs=None, min_image_size=None):
                 yield content
 
     def _find_twitter_meta_image(doc):
-        return
         metas = doc.xpath('//meta[@name="twitter:image"]')
         for meta in metas:
             if meta.attrib.get('content'):
