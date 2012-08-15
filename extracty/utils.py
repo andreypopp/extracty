@@ -7,6 +7,7 @@
 
 import re
 import lxml.html
+import dateutil.parser
 
 def gen_matches_any(*p):
     """ Generate regexp for matching against any of the parts ``p``"""
@@ -70,3 +71,17 @@ def precedings(element, before=None, skip=None):
         if before and before(x):
             break
         yield x
+
+def depth_first(element, skip=None):
+    """ Traverse tree in depth-first manner"""
+    if not (skip and skip(element)):
+        yield element
+        for ch in element.iterchildren():
+            for el in depth_first(ch, skip=skip):
+                yield el
+
+def try_parse_timestamp(v):
+    try:
+        return dateutil.parser.parse(v)
+    except ValueError:
+        return None

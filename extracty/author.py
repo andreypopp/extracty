@@ -7,7 +7,7 @@
 
 import re
 import lxml.html
-from .utils import gen_matches_any, html_to_text, matches_attr
+from . import utils
 
 __all__ = ('extract_author',)
 
@@ -23,6 +23,8 @@ def extract_author(doc):
 
     def _find_meta(doc):
         """ Inspect <meta> tags"""
+        import ipdb
+        ipdb.set_trace()
         for name in ('author', 'blogger', 'creator', 'publisher'):
             metas = doc.xpath('//meta[@name="%s"]' % name)
             for meta in metas:
@@ -41,7 +43,12 @@ def extract_author(doc):
         """ Inspect HTML5 itemprop microdata"""
         es = doc.xpath('//*[@itemprop="author"]')
         for e in es:
-            text = html_to_text(e)
+            text = utils.html_to_text(e)
+            if text:
+                return text
+        es = doc.xpath('//*[@itemprop="creator"]')
+        for e in es:
+            text = utils.html_to_text(e)
             if text:
                 return text
 
@@ -49,7 +56,7 @@ def extract_author(doc):
         """ Inspect rel attributes"""
         es = doc.xpath('//*[@rel="author"]')
         for e in es:
-            text = html_to_text(e)
+            text = utils.html_to_text(e)
             if text:
                 return text
 
@@ -59,16 +66,14 @@ def extract_author(doc):
         Use either id and class names or content itself
         """
 
-        # holds (text, textparts) pairs
+        # holds (text, textparts, weight) pairs
         seen = []
 
-        for e in doc.iter():
+        # if we encounter comments - skip entire subtree
+        skip = lambda e: utils.matches_attr(_comment_classes, e, 'class', 'id')
+        for e in utils.depth_first(doc, skip=skip):
             weight = 0
-            text = html_to_text(e)
-
-            # if we encounter comments - skip entire tree after that
-            if matches_attr(_comment_classes, e, 'class', 'id'):
-                break
+            text = utils.html_to_text(e)
 
             if len(text) > 80:
                 continue
@@ -79,8 +84,8 @@ def extract_author(doc):
 
             # try to match by class and id names
             if (
-                matches_attr(_author_classes, e, 'class', 'id')
-                and not matches_attr(_author_classes_banned, e, 'class', 'id')):
+                utils.matches_attr(_author_classes, e, 'class', 'id')
+                and not utils.matches_attr(_author_classes_banned, e, 'class', 'id')):
                 if not text:
                     continue
                 weight += 1
@@ -109,6 +114,8 @@ def extract_author(doc):
                 parts.remove(part)
             elif not re.sub(r'[^a-z]+', '', part, flags=re.I):
                 parts.remove(part)
+            elif utils.try_parse_timestamp(part):
+                parts.remove(part)
         if parts:
             return parts[0]
 
@@ -117,11 +124,13 @@ def extract_author(doc):
             parts = [p.strip() for p in parts if p and p.strip() and len(p) > 1]
             author = ' , '.join(parts)
         author = re.sub(r'.*by($|\s)', '', author, flags=re.I)
-        author = re.sub(r'^[^a-z]+', '', author, flags=re.I)
+        author = re.sub(r'^[^a-z0-9]+', '', author, flags=re.I)
         splitter = re.compile(r'( at )|( on )|[,\|]', re.I)
         if splitter.search(author):
             parts = splitter.split(author)
-            author = _best_part(parts)
+        else:
+            parts = [author]
+        author = _best_part(parts)
         return author.strip() if author else None
 
     for finder in (_find_itemprop, _find_meta, _find_heueristics, _find_rel):
@@ -133,7 +142,7 @@ def extract_author(doc):
             else:
                 return _clean(maybe_author, None)
 
-_author_classes = gen_matches_any(
+_author_classes = utils.gen_matches_any(
     'contributor',
     'author',
     'writer',
@@ -142,14 +151,14 @@ _author_classes = gen_matches_any(
     'signoff'
     )
 
-_author_classes_banned = gen_matches_any(
+_author_classes_banned = utils.gen_matches_any(
     'date',
     'photo',
     'title',
     'tag',
     )
 
-_comment_classes = gen_matches_any(
+_comment_classes = utils.gen_matches_any(
     'comment', 'discus', 'disqus', 'pingback')
 
 _author_content = re.compile(

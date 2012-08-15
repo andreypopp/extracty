@@ -1,7 +1,7 @@
 import unittest
 import lxml.etree
 
-from extracty import precedings
+from extracty.utils import precedings, depth_first
 
 def doc(text):
     return lxml.etree.fromstring(text)
@@ -88,3 +88,43 @@ class PrecedingsTests(unittest.TestCase):
         self.assertIterateOver(d, '/doc/c', ['a', 'doc'], skip=skip)
         self.assertIterateOver(d, '/doc/c/c1', ['c', 'a', 'doc'], skip=skip)
         self.assertIterateOver(d, '/doc/d', ['c1', 'c', 'a', 'doc'], skip=skip)
+
+class DepthFirstTests(unittest.TestCase):
+
+    def assertIterateOver(self, e, tagnames, **kw):
+        found = [x.tag for x in depth_first(e, **kw)]
+        self.assertEqual(tagnames, found)
+
+    def test_simple(self):
+        d = doc('''
+        <doc>
+            <a/>
+            <b>
+                <b1/>
+                <b2/>
+            </b>
+            <c>
+                <c1/>
+            </c>
+            <d/>
+        </doc>
+        ''')
+        self.assertIterateOver(d, ['doc', 'a', 'b', 'b1', 'b2', 'c', 'c1', 'd'])
+
+    def test_skip(self):
+        d = doc('''
+        <doc>
+            <a/>
+            <b>
+                <b1/>
+                <b2/>
+            </b>
+            <c>
+                <c1/>
+            </c>
+            <d/>
+        </doc>
+        ''')
+        skip = lambda x: x.tag == 'c'
+        self.assertIterateOver(d, ['doc', 'a', 'b', 'b1', 'b2', 'd'],
+                skip=skip)

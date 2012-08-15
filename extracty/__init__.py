@@ -28,7 +28,7 @@ def extract(doc, url=None, html=False, author=True, cover_image=True):
     """ Extract metadata from HTML document"""
     if isinstance(doc, basestring):
         doc = lxml.html.fromstring(doc)
-    metadata = {}
+    metadata = {'url': url}
     if author:
         metadata['author'] = extract_author(doc)
     if cover_image:
