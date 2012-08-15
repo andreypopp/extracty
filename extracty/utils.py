@@ -85,3 +85,7 @@ def try_parse_timestamp(v):
         return dateutil.parser.parse(v)
     except ValueError:
         return None
+
+_zn2_re = re.compile(r'[^a-z0-9]', re.I)
+def zn2(v):
+    return _zn2_re.sub('', v)

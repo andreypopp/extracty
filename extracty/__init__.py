@@ -16,19 +16,22 @@ import lxml.html
 
 from .author import extract_author
 from .image import extract_cover_image
+from .title import extract_title
 from .utils import gen_matches_any, html_to_text, precedings
 
 __all__ = (
-    'extract', 'extract_author', 'extract_cover_image',
+    'extract', 'extract_author', 'extract_cover_image', 'extract_title',
     'html_to_text')
 
-def extract(doc, url=None, html=False, author=True, cover_image=True):
+def extract(doc, url=None, html=False, author=True, cover_image=True, title=True):
     """ Extract metadata from HTML document"""
     if isinstance(doc, basestring):
         doc = lxml.html.fromstring(doc)
     metadata = {'url': url}
     if author:
         metadata['author'] = extract_author(doc)
+    if title:
+        metadata['title'] = extract_title(doc)
     if cover_image:
         extracted = extract_cover_image(doc, url)
         if extracted:
@@ -61,6 +64,9 @@ def main():
     options:
         -h, --help          show this message and exit
         -u, --url URL       url to use in case of filename provided
+        --no-cover-image    do not extract image
+        --no-author         do not extract author
+        --no-title          do not extract title
     """
     import docopt
     import urllib2
@@ -79,7 +85,11 @@ def main():
     else:
         data = open(args['SRC']).read()
         url = args['--url'] or ''
-    metadata = extract(data, url=url)
+    metadata = extract(data, url=url,
+        author=not args['--no-author'],
+        title=not args['--no-title'],
+        cover_image=not args['--no-cover-image'],
+        )
     for k, v in metadata.items():
         v = v or ''
         print '%s\t%s' % (k, v.encode('utf8'))
