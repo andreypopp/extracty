@@ -16,6 +16,7 @@ setup(
     install_requires=[
         'lxml',
         'docopt',
+        'PIL',
     ],
     package_data={'justext': ['stoplists/*.txt']},
     test_suite='tests',
