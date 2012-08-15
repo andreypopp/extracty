@@ -30,6 +30,7 @@ def extract_title(doc):
                 return text
 
     def _headers(doc):
+        # not sure if need to look for h4, h5, h6, ...
         return doc.xpath('//h1|//h2|//h3')
 
     def _clean(title, doc):
