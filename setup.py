@@ -10,8 +10,7 @@ setup(
     author='Andrey Popp',
     author_email='8mayday@gmail.com',
     license='BSD',
-    py_modules=['extracty'],
-    packages=['justext'],
+    packages=['extracty', 'justext'],
     include_package_data=True,
     zip_safe=False,
     install_requires=[
