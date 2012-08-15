@@ -10,7 +10,6 @@
 
 import re
 import urlparse
-import urllib2
 import justext
 import lxml.html
 

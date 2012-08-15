@@ -53,7 +53,6 @@ def extract_cover_image(doc, url, paragraphs=None, min_image_size=None):
             doc, justext.get_stoplist('English'))
         prev = None
         images = []
-        tree = lxml.etree.ElementTree(doc)
         for p in ps:
             if p['class'] == 'good':
                 xpath = p['xpath']

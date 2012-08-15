@@ -13,7 +13,6 @@ def extract_title(doc):
         doc = lxml.html.fromstring(doc)
 
     def _find_meta_title(doc):
-        return
         metas = doc.xpath('//meta[@name="title"]|//meta[@name="Title"]')
         for meta in metas:
             return meta.attrib.get('content')

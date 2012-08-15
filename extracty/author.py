@@ -100,7 +100,7 @@ def extract_author(doc):
 
         if seen:
             seen.sort(key=lambda (t, p, w): -w)
-            (t, p, w) = seen[0]
+            (t, p, _) = seen[0]
             return (t, p)
 
     def _best_part(parts):
