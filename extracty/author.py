@@ -63,9 +63,8 @@ def extract_author(doc):
         seen = []
 
         for e in doc.iter():
-
+            weight = 0
             text = html_to_text(e)
-            found = False
 
             # if we encounter comments - skip entire tree after that
             if matches_attr(_comment_classes, e, 'class', 'id'):
@@ -76,7 +75,7 @@ def extract_author(doc):
 
             # try to match by content
             if _author_content.search(text) or _author_content_2.search(text):
-                found = True
+                weight += 1
 
             # try to match by class and id names
             if (
@@ -84,17 +83,22 @@ def extract_author(doc):
                 and not matches_attr(_author_classes_banned, e, 'class', 'id')):
                 if not text:
                     continue
-                found = True
+                weight += 1
 
-            if found:
+            if weight > 0:
                 # check if this element specialize its parent
-                for (el, _) in seen[:]:
+                prev_weight = 0
+                for (el, _p, _w) in seen[:]:
                     if text in el:
-                        seen.remove((el, _))
-                seen.append((text, list(e.itertext())))
+                        prev_weight = max(_w, prev_weight)
+                        seen.remove((el, _p, _w))
+                seen.append((text, list(e.itertext()),
+                    max(weight, prev_weight)))
 
         if seen:
-            return seen[0]
+            seen.sort(key=lambda (t, p, w): -w)
+            (t, p, w) = seen[0]
+            return (t, p)
 
     def _best_part(parts):
         parts = parts[:]
