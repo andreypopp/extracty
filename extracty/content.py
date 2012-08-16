@@ -42,13 +42,15 @@ def remove_empty_elements(doc):
         if not html_to_text(el).strip():
             to_delete.append(el)
     for el in reversed(to_delete):
-        el.drop_tree()
+        if el.getparent() is not None:
+            el.drop_tree()
 
 def remove_non_content(doc):
-    tags = 'head link style script noscript meta iframe'.split()
+    tags = 'head link style script noscript meta iframe header footer'.split()
     xpath = '|'.join('//' + tag for tag in tags)
     for el in doc.xpath(xpath):
-        el.drop_tree()
+        if el.getparent() is not None:
+            el.drop_tree()
 
 def remove_bad_by_classifier(doc):
     ps = justext.justext(
@@ -59,7 +61,8 @@ def remove_bad_by_classifier(doc):
             for el in doc.xpath(p['xpath']):
                 to_delete.append(el)
     for el in reversed(to_delete):
-        el.drop_tree()
+        if el.getparent() is not None:
+            el.drop_tree()
 
 def clean(doc):
     to_delete = []
@@ -74,7 +77,8 @@ def clean(doc):
         if el.text:
             el.text = el.text.strip()
     for el in reversed(to_delete):
-        el.drop_tree()
+        if el.getparent() is not None:
+            el.drop_tree()
 
 def unwrap_elements(doc):
 
