@@ -124,38 +124,6 @@ def decode_entities_pp(unicode_string):
     """
     return unicode_string.translate(decode_entities_pp_trans)
 
-def add_kw_tags(root):
-    """
-    Surrounds text nodes with <kw></kw> tags. To protect text nodes from
-    being removed with nearby tags.
-    """
-    blank_text = re.compile(u'^\s*$', re.U)
-    nodes_with_text = []
-    nodes_with_tail = []
-    for node in root.iter():
-        if node.text and node.tag not in (lxml.etree.Comment, lxml.etree.ProcessingInstruction):
-            nodes_with_text.append(node)
-        if node.tail:
-            nodes_with_tail.append(node)
-    for node in nodes_with_text:
-        if blank_text.match(node.text):
-            node.text = None
-        else:
-            kw = lxml.etree.Element('kw')
-            kw.text = node.text
-            node.text = None
-            node.insert(0, kw)
-    for node in nodes_with_tail:
-        if blank_text.match(node.tail):
-            node.tail = None
-        else:
-            kw = lxml.etree.Element('kw')
-            kw.text = node.tail
-            node.tail = None
-            parent = node.getparent()
-            parent.insert(parent.index(node) + 1, kw)
-    return root
-
 def remove_comments(root):
     "Removes comment nodes."
     to_be_removed = []
@@ -163,8 +131,7 @@ def remove_comments(root):
         if node.tag == lxml.etree.Comment:
             to_be_removed.append(node)
     for node in to_be_removed:
-        parent = node.getparent()
-        del parent[parent.index(node)]
+        node.drop_tree()
 
 def parse_html(html_text, encoding=None, default_encoding=DEFAULT_ENCODING,
         enc_errors=DEFAULT_ENC_ERRORS):
@@ -179,8 +146,6 @@ def parse_html(html_text, encoding=None, default_encoding=DEFAULT_ENCODING,
 
 def preprocess(root):
     """Converts HTML to DOM and removes unwanted parts."""
-    # add <kw> tags, protect text nodes
-    add_kw_tags(root)
     # remove comments
     remove_comments(root)
     # remove head, script and style
@@ -189,8 +154,7 @@ def preprocess(root):
         if node.tag in ['head', 'script', 'style']:
             to_be_removed.append(node)
     for node in to_be_removed:
-        parent = node.getparent()
-        del parent[parent.index(node)]
+        node.drop_tree()
     return root
 
 class XPathPart(object):
