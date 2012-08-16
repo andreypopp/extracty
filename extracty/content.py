@@ -28,9 +28,9 @@ def extract_content(doc, url, html=True):
         doc = lxml.html.fromstring(doc)
     remove_non_content(doc)
     remove_bad_by_classifier(doc)
-    remove_empty_elements(doc)
     rewrite_links(doc, url)
-    clean(doc)
+    clean(doc, strip_attrs=True)
+    remove_empty_elements(doc)
     doc = unwrap_elements(doc)
     return lxml.html.tostring(doc, pretty_print=True)
 
@@ -64,18 +64,25 @@ def remove_bad_by_classifier(doc):
         if el.getparent() is not None:
             el.drop_tree()
 
-def clean(doc):
+def clean(doc, strip_attrs=True):
     to_delete = []
     for el in doc.iter():
+
         if matches_attr(_bad_attr_re, el, 'class', 'id'):
             to_delete.append(el)
-        for attr in ('id', 'style', 'class'):
-            if attr in el.attrib:
-                del el.attrib[attr]
+
+        if strip_attrs:
+            for k in el.attrib.keys():
+                if (
+                    k in ('id', 'style', 'class', 'height', 'width')
+                    or k.startswith('data-')):
+                    del el.attrib[k]
+
         if el.tail:
             el.tail = el.tail.strip()
         if el.text:
             el.text = el.text.strip()
+
     for el in reversed(to_delete):
         if el.getparent() is not None:
             el.drop_tree()
@@ -111,7 +118,8 @@ _bad_attr_re = gen_matches_any(
     'footer',
     'footnote',
     'masthead',
-    'media',
+    'popup',
+    '^media$',
     'meta',
     'outbrain',
     'promo',
