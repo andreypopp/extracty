@@ -16,21 +16,26 @@ import lxml.html
 from .author import extract_author
 from .image import extract_cover_image
 from .title import extract_title
+from .content import extract_content
 from .utils import gen_matches_any, html_to_text, precedings, fetch_url
 
 __all__ = (
     'extract', 'extract_author', 'extract_cover_image', 'extract_title',
     'html_to_text')
 
-def extract(doc, url=None, html=False, author=True, cover_image=True, title=True):
+def extract(doc, url, author=True, cover_image=True, title=True, content=True):
     """ Extract metadata from HTML document"""
     if isinstance(doc, basestring):
         doc = lxml.html.fromstring(doc)
+
     metadata = {'url': url}
+
     if author:
         metadata['author'] = extract_author(doc)
+
     if title:
         metadata['title'] = extract_title(doc)
+
     if cover_image:
         extracted = extract_cover_image(doc, url)
         if extracted:
@@ -38,21 +43,10 @@ def extract(doc, url=None, html=False, author=True, cover_image=True, title=True
         metadata['cover_image'] = extracted
 
     # this should go last, because it mutates tree
-    if html:
-        metadata['html'] = extract_html(doc)
+    if content:
+        metadata['content'] = extract_content(doc, url)
+
     return metadata
-
-def extract_html(doc, paragraphs=None):
-    if isinstance(doc, basestring):
-        doc = lxml.html.fromstring(doc)
-
-    ps = paragraphs or justext.justext(
-        doc, justext.get_stoplist('English'))
-    for p in ps:
-        if p['class'] != 'bad':
-            for el in doc.xpath(p['xpath']):
-                el.drop_tree()
-    return lxml.html.tostring(doc)
 
 def main():
     """usage: extracty [options] SRC
