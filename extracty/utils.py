@@ -7,6 +7,7 @@
 
 import re
 import lxml.html
+import urllib2
 import dateutil.parser
 
 def gen_matches_any(*p):
@@ -89,3 +90,13 @@ def try_parse_timestamp(v):
 _zn2_re = re.compile(r'[^a-z0-9]', re.I)
 def zn2(v):
     return _zn2_re.sub('', v)
+
+def fetch_url(url):
+    request = urllib2.Request(url, headers={
+        'User-Agent': (
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8)'
+            ' AppleWebKit/536.25 (KHTML, like Gecko)'
+            ' Version/6.0 Safari/536.25')
+
+    })
+    return urllib2.urlopen(request).read()

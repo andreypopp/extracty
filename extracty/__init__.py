@@ -16,7 +16,7 @@ import lxml.html
 from .author import extract_author
 from .image import extract_cover_image
 from .title import extract_title
-from .utils import gen_matches_any, html_to_text, precedings
+from .utils import gen_matches_any, html_to_text, precedings, fetch_url
 
 __all__ = (
     'extract', 'extract_author', 'extract_cover_image', 'extract_title',
@@ -72,18 +72,11 @@ def main():
     args = docopt.docopt(main.__doc__)
 
     if args['SRC'].lower().startswith('http'):
-        request = urllib2.Request(args['SRC'], headers={
-            'User-Agent': (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8)'
-                ' AppleWebKit/536.25 (KHTML, like Gecko)'
-                ' Version/6.0 Safari/536.25')
-
-        })
-        data = urllib2.urlopen(request).read()
         url = args['SRC']
+        data = fetch_url(url)
     else:
-        data = open(args['SRC']).read()
         url = args['--url'] or ''
+        data = open(args['SRC']).read()
     metadata = extract(data, url=url,
         author=not args['--no-author'],
         title=not args['--no-title'],
