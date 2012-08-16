@@ -18,12 +18,12 @@ __all__ = ('application',)
 
 def application(environ, start_response):
     """ WSGI application"""
-    def response(data, status=200, headers=[]):
-        start_response(status, headers)
+    def response(data, status="200 Success", headers=[]):
+        start_response(str(status), headers)
         return [json.dumps(data)]
 
     def error(message):
-        return response({"error": message}, status=400)
+        return response({"error": message}, status="400 Error")
 
     qs = urlparse.parse_qs(environ['QUERY_STRING'])
     if not 'url' in qs:
