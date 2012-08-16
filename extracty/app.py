@@ -47,8 +47,6 @@ def application(environ, start_response):
         return extract(doc, url, **kwargs)
 
     result = get_result()
-    import ipdb
-    ipdb.set_trace()
     return response(result) if not is_view else response(template % result)
 
 template = """
