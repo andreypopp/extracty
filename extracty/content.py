@@ -6,6 +6,7 @@
 """
 
 import lxml.html
+import lxml.builder
 import urlparse
 import justext
 
@@ -65,9 +66,9 @@ def clean(doc):
     for el in doc.iter():
         if matches_attr(_bad_attr_re, el, 'class', 'id'):
             to_delete.append(el)
-       #for attr in ('id', 'style', 'class'):
-       #    if attr in el.attrib:
-       #        del el.attrib[attr]
+        for attr in ('id', 'style', 'class'):
+            if attr in el.attrib:
+                del el.attrib[attr]
         if el.tail:
             el.tail = el.tail.strip()
         if el.text:
@@ -76,12 +77,18 @@ def clean(doc):
         el.drop_tree()
 
 def unwrap_elements(doc):
-    if not doc.tag in ('div',):
-        return doc
-    while len(doc) == 1:
-        doc = doc[0]
-    for idx, el in enumerate(doc):
-        doc[idx] = unwrap_elements(el)
+
+    if doc.tag == 'html':
+        return unwrap_elements(doc[0])
+    elif doc.tag in ('body', 'div'):
+        if doc.text or doc.tail:
+            return doc
+        if len(doc) == 1:
+            return unwrap_elements(doc[0])
+        else:
+            return lxml.builder.E.div(*doc)
+
+
     return doc
 
 def rewrite_links(doc, url):
@@ -128,4 +135,5 @@ _bad_attr_re = gen_matches_any(
     'subscrib',
     'subscript',
     'buy',
+    '(^|\-|_)date($|\-|_)',
     )
