@@ -6,6 +6,7 @@
 """
 
 import urlparse
+import logging
 try:
     import simplejson as json
 except ImportError:
@@ -15,6 +16,9 @@ from . import extract
 from .utils import fetch_url
 
 __all__ = ('application',)
+
+# TODO: remove me
+logging.getLogger('waitress').addHandler(logging.StreamHandler())
 
 def application(environ, start_response):
     """ WSGI application"""
@@ -27,7 +31,7 @@ def application(environ, start_response):
         else:
             headers = [('Content-type', 'application/json')]
         start_response(str(status), headers)
-        return [json.dumps(data)] if not is_view else data
+        return [json.dumps(data)] if not is_view else data.encode('utf8')
 
     def error(message):
         msg = {"error": message} if not is_view else message
@@ -58,8 +62,8 @@ template = """
     }
 </style>
 <div>
-    <div class="author">%(author)s</div>
-    <div class="url">%(url)s</div>
+    <div class="author">author: %(author)s</div>
+    <div class="url">url: %(url)s</div>
     <img src="%(cover_image)s">
     <h1 class="title">%(title)s</h1>
     <div class="content">%(content)s</div>
